@@ -3,31 +3,28 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Install backend dependencies
-COPY backend/package*.json ./
+COPY backend/package*.json ./backend/
+WORKDIR /app/backend
 RUN npm install
 
-# Copy backend code
-COPY backend/src ./src
-
-# Install frontend dependencies and build
+# Install frontend dependencies
+COPY frontend/package*.json ../frontend/
 WORKDIR /app/frontend
-COPY frontend/package*.json ./
 RUN npm install --legacy-peer-deps
 
-# Copy frontend code
+# Copy and build frontend
 COPY frontend .
-
-# Build frontend
 RUN npm run build
 
-# Move built frontend to backend public folder
-RUN mkdir -p /app/public && cp -r dist/* /app/public/
-
-# Back to app root
+# Copy backend source
 WORKDIR /app
+COPY backend/src ./backend/src
+
+# Copy frontend dist to public
+RUN mkdir -p /app/public && cp -r /app/frontend/dist/* /app/public/
 
 EXPOSE 3000
 
 ENV NODE_ENV=production
 
-CMD ["node", "src/server.js"]
+CMD ["node", "backend/src/server.js"]
