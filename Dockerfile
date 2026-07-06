@@ -1,11 +1,11 @@
 # Stage 1: Build Frontend
 FROM node:18-alpine AS frontend-build
 
-WORKDIR /app/frontend
+WORKDIR /frontend
 
 COPY frontend/package*.json ./
 
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 COPY frontend .
 
@@ -18,15 +18,15 @@ WORKDIR /app
 
 COPY backend/package*.json ./
 
-RUN npm install
+RUN npm install --no-save
 
 COPY backend/src ./src
 
 # Copy built frontend to backend
-COPY --from=frontend-build /app/frontend/dist ./public
+COPY --from=frontend-build /frontend/dist ./public
 
 EXPOSE 3000
 
 ENV NODE_ENV=production
 
-CMD ["npm", "start"]
+CMD ["node", "src/server.js"]
