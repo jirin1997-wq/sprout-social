@@ -1,29 +1,30 @@
-# Stage 1: Build Frontend
-FROM node:18-alpine AS frontend-build
-
-WORKDIR /frontend
-
-COPY frontend/package*.json ./
-
-RUN npm install --legacy-peer-deps
-
-COPY frontend .
-
-RUN npm run build
-
-# Stage 2: Build Backend
 FROM node:18-alpine
 
 WORKDIR /app
 
+# Install backend dependencies
 COPY backend/package*.json ./
+RUN npm install
 
-RUN npm install --no-save
-
+# Copy backend code
 COPY backend/src ./src
 
-# Copy built frontend to backend
-COPY --from=frontend-build /frontend/dist ./public
+# Install frontend dependencies and build
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm install --legacy-peer-deps
+
+# Copy frontend code
+COPY frontend .
+
+# Build frontend
+RUN npm run build
+
+# Move built frontend to backend public folder
+RUN mkdir -p /app/public && cp -r dist/* /app/public/
+
+# Back to app root
+WORKDIR /app
 
 EXPOSE 3000
 
