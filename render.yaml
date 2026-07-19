@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: sprout-social
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: |
+      cd backend && npm install &&
+      cd ../frontend && npm install --legacy-peer-deps &&
+      npm run build &&
+      mkdir -p ../public && cp -r dist/* ../public/
+    startCommand: node backend/src/server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sprout-social-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+
+databases:
+  - name: sprout-social-db
+    engine: postgres
+    version: 15
+    plan: free
+    region: oregon
