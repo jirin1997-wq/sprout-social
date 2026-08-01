@@ -23,21 +23,33 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../../public')));
 
 // Database
-const poolConfig = process.env.DATABASE_URL
-  ? { connectionString: process.env.DATABASE_URL }
-  : {
-      user: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD || 'password',
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT || '5432'),
-      database: process.env.DB_NAME || 'sprout_social',
-    };
+let pool;
 
-export const pool = new Pool(poolConfig);
+try {
+  const poolConfig = process.env.DATABASE_URL
+    ? { connectionString: process.env.DATABASE_URL, max: 20 }
+    : {
+        user: process.env.DB_USER || 'postgres',
+        password: process.env.DB_PASSWORD || 'password',
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '5432'),
+        database: process.env.DB_NAME || 'sprout_social',
+        max: 20,
+      };
 
-pool.on('error', (err) => {
-  console.error('Database pool error:', err);
-});
+  pool = new Pool(poolConfig);
+
+  pool.on('error', (err) => {
+    console.error('Database pool error:', err);
+  });
+
+  console.log('Database pool initialized');
+} catch (err) {
+  console.error('Failed to initialize database pool:', err.message);
+  process.exit(1);
+}
+
+export { pool };
 
 // Health check
 app.get('/health', (req, res) => {
