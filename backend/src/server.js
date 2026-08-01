@@ -23,15 +23,21 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../../public')));
 
 // Database
-export const pool = new Pool(
-  process.env.DATABASE_URL || {
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'password',
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 5432,
-    database: process.env.DB_NAME || 'sprout_social',
-  }
-);
+const poolConfig = process.env.DATABASE_URL
+  ? { connectionString: process.env.DATABASE_URL }
+  : {
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD || 'password',
+      host: process.env.DB_HOST || 'localhost',
+      port: parseInt(process.env.DB_PORT || '5432'),
+      database: process.env.DB_NAME || 'sprout_social',
+    };
+
+export const pool = new Pool(poolConfig);
+
+pool.on('error', (err) => {
+  console.error('Database pool error:', err);
+});
 
 // Health check
 app.get('/health', (req, res) => {
@@ -56,6 +62,18 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
-app.listen(PORT, () => {
+// Start server
+const server = app.listen(PORT, () => {
   console.log(`Sprout Social API running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV}`);
+  console.log(`Database configured: ${!!process.env.DATABASE_URL || 'Using local config'}`);
+});
+
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('Server closed');
+    pool.end();
+  });
 });
